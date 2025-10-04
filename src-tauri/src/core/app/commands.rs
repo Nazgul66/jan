@@ -93,7 +93,7 @@ pub fn get_jan_data_folder_path<R: Runtime>(app_handle: tauri::AppHandle<R>) -> 
 
 #[tauri::command]
 pub fn get_configuration_file_path<R: Runtime>(app_handle: tauri::AppHandle<R>) -> PathBuf {
-    let app_path = app_handle.path().app_data_dir().unwrap_or_else(|err| {
+    let app_path = std::fs::canonicalize(app_handle.path().app_data_dir().unwrap_or_else(|err| {
         log::error!(
             "Failed to get app data directory: {}. Using home directory instead.",
             err
@@ -107,7 +107,7 @@ pub fn get_configuration_file_path<R: Runtime>(app_handle: tauri::AppHandle<R>) 
         .expect("Failed to determine the home directory");
 
         PathBuf::from(home_dir)
-    });
+    })).unwrap();
 
     let package_name = env!("CARGO_PKG_NAME");
     #[cfg(target_os = "linux")]
@@ -138,12 +138,14 @@ pub fn get_configuration_file_path<R: Runtime>(app_handle: tauri::AppHandle<R>) 
 
 #[tauri::command]
 pub fn default_data_folder_path<R: Runtime>(app_handle: tauri::AppHandle<R>) -> String {
-    let mut path = app_handle.path().data_dir().unwrap();
+    let mut path = app_handle.path().app_data_dir().unwrap();
 
     let app_name = std::env::var("APP_NAME")
         .unwrap_or_else(|_| app_handle.config().product_name.clone().unwrap());
     path.push(app_name);
     path.push("data");
+
+    path = std::fs::canonicalize(path).unwrap();
 
     let mut path_str = path.to_str().unwrap().to_string();
 
@@ -152,6 +154,7 @@ pub fn default_data_folder_path<R: Runtime>(app_handle: tauri::AppHandle<R>) -> 
     }
 
     path_str
+
 }
 
 #[tauri::command]
