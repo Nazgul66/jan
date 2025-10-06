@@ -1,0 +1,45 @@
+{
+  "name": "@janhq/jan-provider-extension",
+  "productName": "Jan Provider",
+  "version": "1.0.0",
+  "description": "Provides remote model inference through Jan API",
+  "main": "dist/index.js",
+  "author": "Jan <service@jan.ai>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rolldown -c rolldown.config.mjs",
+    "build:publish": "rimraf *.tgz --glob || true && yarn build && npm pack && cpx *.tgz ../../pre-install",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./main": "./dist/module.js"
+  },
+  "devDependencies": {
+    "cpx": "1.5.0",
+    "rimraf": "6.0.1",
+    "rolldown": "1.0.0-beta.1",
+    "ts-loader": "^9.5.0",
+    "typescript": "5.9.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@janhq/core": "../../core/package.tgz",
+    "@tauri-apps/plugin-http": "2.5.0",
+    "zustand": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/*",
+    "package.json",
+    "README.md"
+  ],
+  "bundleDependencies": [],
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  },
+  "packageManager": "yarn@4.5.3"
+}

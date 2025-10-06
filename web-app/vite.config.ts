@@ -65,6 +65,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@janhq/conversational-extension': path.resolve(__dirname, '../extensions/conversational-extension/src/index.ts'),
+        '@janhq/jan-provider-extension': path.resolve(__dirname, '../extensions/jan-provider-extension/src/index.ts'),
       },
     },
     optimizeDeps: {

@@ -9,6 +9,7 @@
 import { TauriCoreService } from './tauri'
 import type { ExtensionManifest } from '@/lib/extension'
 import JanConversationalExtension from '@janhq/conversational-extension'
+import JanProviderExtension from '@janhq/jan-provider-extension'
 
 export class MobileCoreService extends TauriCoreService {
   /**
@@ -54,6 +55,15 @@ export class MobileCoreService extends TauriCoreService {
       '1.0.0'
     )
 
+    const janProviderExt = new JanProviderExtension(
+      'built-in',
+      '@janhq/jan-provider-extension',
+      'Jan Provider',
+      true,
+      'Provides remote model inference through Jan API',
+      '1.0.0'
+    )
+
     return [
       {
         name: '@janhq/conversational-extension',
@@ -63,6 +73,15 @@ export class MobileCoreService extends TauriCoreService {
         description: 'Manages conversation threads and messages',
         version: '1.0.0',
         extensionInstance: conversationalExt,
+      },
+      {
+        name: '@janhq/jan-provider-extension',
+        productName: 'Jan Provider',
+        url: 'built-in',
+        active: true,
+        description: 'Provides remote model inference through Jan API',
+        version: '1.0.0',
+        extensionInstance: janProviderExt,
       },
     ]
   }

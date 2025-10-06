@@ -26,7 +26,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@janhq/conversational-extension": ["../extensions/conversational-extension/src/index.ts"]
+      "@janhq/conversational-extension": ["../extensions/conversational-extension/src/index.ts"],
+      "@janhq/jan-provider-extension": ["../extensions/jan-provider-extension/src/index.ts"]
     }
   },
   "include": ["src"],
