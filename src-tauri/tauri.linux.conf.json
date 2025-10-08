@@ -10,9 +10,9 @@
     }
   },
   "bundle": {
-    "targets": ["deb", "appimage"],
+    "targets": ["deb", "appimage", "rpm"],
     "resources": ["resources/pre-install/**/*", "resources/LICENSE"],
-    "externalBin": ["resources/bin/uv"],
+    "externalBin": ["resources/bin/uv", "resources/bin/bun"],
     "linux": {
       "appimage": {
         "bundleMediaFramework": false,
@@ -20,7 +20,15 @@
       },
       "deb": {
         "files": {
-          "usr/bin/bun": "resources/bin/bun"
+          "usr/bin/bun": "resources/bin/bun",
+          "usr/bin/uv": "resources/bin/uv"
+        }
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.1", "gtk3", "libayatana-appindicator-gtk3"],
+        "files": {
+          "/usr/bin/bun": "resources/bin/bun",
+          "/usr/bin/uv": "resources/bin/uv"
         }
       }
     }
