@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { ArrowDown } from 'lucide-react'
 import { useTranslation } from '@/i18n/react-i18next-compat'
 import { useAppState } from '@/hooks/useAppState'
+import { MessageStatus } from '@janhq/core'
 
 const ScrollToBottom = ({
   threadId,
@@ -28,12 +29,9 @@ const ScrollToBottom = ({
 
   const streamingContent = useAppState((state) => state.streamingContent)
 
+  const lastMsg = messages[messages.length - 1]
   const showGenerateAIResponseBtn =
-    (messages[messages.length - 1]?.role === 'user' ||
-      (messages[messages.length - 1]?.metadata &&
-        'tool_calls' in (messages[messages.length - 1].metadata ?? {}))) &&
-    !streamingContent
-
+    !!lastMsg && lastMsg.status !== MessageStatus.Ready && !streamingContent
   return (
     <div
       className={cn(
