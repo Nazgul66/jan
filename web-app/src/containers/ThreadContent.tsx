@@ -57,6 +57,34 @@ const cleanReasoning = (content: string) => {
     .trim()
 }
 
+// Helper function to extract content within <think> tags and strip all auxiliary tags from the final output
+const extractContentAndClean = (
+  rawText: string
+): { reasoningText: string; finalOutput: string } => {
+  // Regex to match content within <think>...</think> tags
+  const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g
+
+  let reasoningText = ''
+  let finalOutput = rawText
+
+  // Extract content within <think> tags for streamedReasoningText
+  const thinkMatches = [...rawText.matchAll(thinkTagRegex)]
+  if (thinkMatches.length > 0) {
+    // Join all reasoning parts separated by newlines
+    reasoningText = thinkMatches
+      .map((match) => match[1])
+      .join('\n\n')
+      .trim()
+  }
+
+  // 2. Strip ALL auxiliary tags from finalOutput
+  finalOutput = finalOutput
+    .replace(thinkTagRegex, '') // Remove <think> tags and content
+    .trim()
+
+  return { reasoningText, finalOutput }
+}
+
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false)
   const { t } = useTranslation()
@@ -140,15 +168,38 @@ export const ThreadContent = memo(
       return { files: [], cleanPrompt: text }
     }, [text, item.role])
 
+    type StreamEvent = {
+      timestamp: number
+      type: 'reasoning_chunk' | 'tool_call' | 'tool_output'
+      data: any
+    }
+
     const {
       finalOutputText,
       streamedReasoningText,
       isReasoningActiveLoading,
       hasReasoningSteps,
     } = useMemo(() => {
-      // With the streaming functions updated, the text variable now only contains the final output.
-      const currentFinalText = text.trim()
-      const currentReasoning = '' // Reasoning is now only derived from streamEvents/allSteps
+      let currentFinalText = text.trim()
+      let currentReasoning = '' // Reasoning is now only derived from streamEvents/allSteps
+
+      // Extract raw streamEvents and check for finalized state
+      const streamEvents = (item.metadata?.streamEvents as StreamEvent[]) || []
+      const isMessageFinalized = !isStreamingThisThread
+
+      // If the message is finalized AND there are no streamEvents,
+      // we assume the 'text' contains the full dump (reasoning + output + tool tags)
+      if (isMessageFinalized && streamEvents.length === 0) {
+        // Use the new helper to separate reasoning (from <think>) and clean the final output
+        const { reasoningText, finalOutput } = extractContentAndClean(text)
+        currentFinalText = finalOutput
+        currentReasoning = reasoningText
+      } else {
+        // Otherwise, trust the streamEvents path (if present) or the current text is the final output
+        // We clean the current text just in case, but it should be clean in streaming mode
+        const { finalOutput } = extractContentAndClean(text)
+        currentFinalText = finalOutput
+      }
 
       // Check for tool calls or reasoning events in metadata to determine steps/loading
       const isToolCallsPresent = !!(
@@ -158,15 +209,10 @@ export const ThreadContent = memo(
         item.metadata.tool_calls.length > 0
       )
 
-      // Check for any reasoning chunks in the streamEvents
-      const hasReasoningEvents = !!(
-        item.metadata &&
-        'streamEvents' in item.metadata &&
-        Array.isArray(item.metadata.streamEvents) &&
-        item.metadata.streamEvents.some(
-          (e: StreamEvent) => e.type === 'reasoning_chunk'
-        )
-      )
+      // Check for any reasoning chunks in the streamEvents OR if we extracted reasoning from text
+      const hasReasoningEvents =
+        streamEvents.some((e: StreamEvent) => e.type === 'reasoning_chunk') ||
+        currentReasoning.length > 0 // Added check for extracted reasoning
 
       const hasSteps = isToolCallsPresent || hasReasoningEvents
 
@@ -261,12 +307,6 @@ export const ThreadContent = memo(
     const assistant = item.metadata?.assistant as
       | { avatar?: React.ReactNode; name?: React.ReactNode }
       | undefined
-
-    type StreamEvent = {
-      timestamp: number
-      type: 'reasoning_chunk' | 'tool_call' | 'tool_output'
-      data: any
-    }
 
     // Constructing allSteps for ThinkingBlock - CHRONOLOGICAL approach
     const allSteps: ReActStep[] = useMemo(() => {
@@ -376,7 +416,7 @@ export const ThreadContent = memo(
 
         const rawReasoningContent = streamedReasoningText || ''
         const reasoningParagraphs = rawReasoningContent
-          ? rawReasoningContent
+          ? rawReasoningContent // streamedReasoningText is now populated from <think> tags if present
               .split(/\n\s*\n/)
               .filter((s) => s.trim().length > 0)
               .map((content) => content.trim())
@@ -653,7 +693,7 @@ export const ThreadContent = memo(
               />
             )}
 
-            {(
+            {
               <div className="flex items-center gap-2 text-main-view-fg/60 text-xs">
                 <div className={cn('flex items-center gap-2')}>
                   <div
@@ -668,10 +708,10 @@ export const ThreadContent = memo(
                         item.updateMessage && item.updateMessage(item, message)
                       }
                     />
-                    <CopyButton text={item.content?.[0]?.text.value || ''} />
+                    <CopyButton text={finalOutputText || ''} />{' '}
+                    {/* Use finalOutputText for copy */}
                     <DeleteMessageDialog onDelete={removeMessage} />
                     <MessageMetadataDialog metadata={item.metadata} />
-
                     {item.isLastMessage && selectedModel && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -697,7 +737,7 @@ export const ThreadContent = memo(
                   />
                 </div>
               </div>
-            )}
+            }
           </>
         )}
 
